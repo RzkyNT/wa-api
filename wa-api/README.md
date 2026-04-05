@@ -16,8 +16,9 @@ Buka aplikasi Termux Anda, lalu jalankan perintah berikut secara beruntun:
 
 1.  Buka File `config.js`
 2.  Ubah `use_pairing_code: true`
-3.  Masukkan nomor HP pada `phone_number: '628xxxxxxxx'` (Ganti dengan nomor WhatsApp Anda yang aktif).
-4.  Jalankan perintah ini di terminal:
+3.  Masukkan nomor HP pada `phone_number: '628xxxxxxxx'`.
+4.  (Opsional) Masukkan kode impian Anda pada `custom_pairing_code` (harus 8 karakter, contoh: `ABCDEFGH`).
+5.  Jalankan perintah ini di terminal:
 ```bash
 npm start
 ```
