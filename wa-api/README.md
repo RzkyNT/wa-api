@@ -113,11 +113,45 @@ Setiap ada pesan masuk, server akan mengirimkan POST request ke URL tersebut den
 
 ---
 
-## ⚠️ Tips Termux
-Agar proses tidak terhenti saat layar HP mati, jalankan perintah ini di Termux sebelum `npm start`:
+## 🌐 Menghubungkan Termux ke Internet (Tunneling)
+
+Agar URL API di Termux bisa diakses dari website/hosting luar, gunakan salah satu metode tunneling berikut:
+
+### Opsi 1: Localhost.run (Paling Cepat)
+Cukup buka tab baru di Termux dan jalankan:
+```bash
+ssh -R 80:localhost:3000 localhost.run
+```
+Salin URL `https://xxxx.lhr.life` yang muncul di log.
+
+### Opsi 2: Cloudflare Tunnel (Paling Stabil)
+Instalasi sekali saja:
+```bash
+pkg install cloudflared
+cloudflared tunnel --url http://localhost:3000
+```
+Cari URL `...trycloudflare.com` di terminal.
+
+---
+
+## 🛡️ Tips Keamanan & Performa
+
+### 1. Kunci Sesi Termux
+Agar proses tidak dimatikan Android saat layar mati, jalankan perintah ini sebelum `npm start`:
 ```bash
 termux-wake-lock
 ```
+
+### 2. Autostart & Forever (PM2)
+Gunakan `pm2` agar API otomatis restart jika terjadi error:
+```bash
+npm install pm2 -g
+pm2 start index.js --name "wa-api"
+pm2 save
+```
+
+### 3. Tambahkan API Key
+Sangat disarankan menambahkan pengamanan (seperti Token Header) jika URL API Anda sudah dipublish secara online agar tidak disalahgunakan orang lain.
 
 ---
 *Dibuat oleh Antigravity AI*
