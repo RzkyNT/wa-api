@@ -6,7 +6,9 @@ import makeWASocket, {
     generateInteractiveListMessage,
     generateCombinedButtons,
     generateUrlButtonMessage,
-    generateCopyCodeButton
+    generateCopyCodeButton,
+    generateWAMessageFromContent,
+    prepareWAMessageMedia
 } from 'baileys-joss';
 import express from 'express';
 import axios from 'axios';
@@ -49,8 +51,8 @@ async function connectToWhatsApp() {
         version,
         auth: state,
         printQRInTerminal: config.use_pairing_code ? false : true,
-        logger: logger.child({ class: 'baileys' }),
-        browser: ['Ubuntu', 'Chrome', '20.0.04']
+        logger: logger.child({ level: 'error', class: 'baileys' }),
+        browser: ['Windows', 'Edge', '110.0.1587.57']
     });
 
     sock.ev.on('connection.update', async (update) => {
@@ -104,7 +106,8 @@ async function connectToWhatsApp() {
             }
 
             if (shouldReconnect) {
-                connectToWhatsApp();
+                console.log('🔄 Reconnecting in 3 seconds...');
+                setTimeout(() => connectToWhatsApp(), 3000);
             }
         } else if (connection === 'open') {
             isConnected = true;
@@ -165,16 +168,37 @@ app.post('/api/send-button', async (req, res) => {
     
     const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
     try {
+        // Hasilkan pesan interaktif mentah
         const buttonMsg = generateQuickReplyButtons(
             text,
             buttons || [
-                { id: 'id1', displayText: 'Button 1' },
-                { id: 'id2', displayText: 'Button 2' }
+                { id: 'btn1', displayText: 'Button 1' },
+                { id: 'btn2', displayText: 'Button 2' }
             ],
             { footer, title }
         );
-        await sock.sendMessage(jid, buttonMsg);
-        res.json({ status: 'success' });
+
+        // Bungkus ulang secara manual untuk memastikan TIDAK dianggap media
+        const finalMsg = {
+            viewOnceMessage: {
+                message: {
+                    interactiveMessage: {
+                        header: { title: title || '', hasMediaAttachment: false },
+                        body: { text: text },
+                        footer: { text: footer || '' },
+                        nativeFlowMessage: buttonMsg.message?.interactiveMessage?.nativeFlowMessage || {
+                            buttons: buttons?.map(b => ({
+                                name: "quick_reply",
+                                buttonParamsJson: JSON.stringify({ display_text: b.displayText, id: b.id })
+                            })) || []
+                        }
+                    }
+                }
+            }
+        };
+
+        const result = await sock.relayMessage(jid, finalMsg, { messageId: sock.generateMessageTag() });
+        res.json({ status: 'success', messageId: result });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -194,7 +218,16 @@ app.post('/api/send-list', async (req, res) => {
             footer,
             sections
         });
-        await sock.sendMessage(jid, listMsg);
+
+        // Paksa sebagai viewOnce agar tidak error Media
+        await sock.sendMessage(jid, { 
+            viewOnceMessage: { 
+                message: { 
+                    ...listMsg.message 
+                } 
+            } 
+        });
+
         res.json({ status: 'success' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -204,13 +237,12 @@ app.post('/api/send-list', async (req, res) => {
 // Send Combined (URL, Call, Copy, Reply)
 app.post('/api/send-combined', async (req, res) => {
     const { to, text, title, footer, actions } = req.body;
-    // actions: [{ type: 'url', displayText: 'Buka Web', url: '...' }, { type: 'call', displayText: 'Panggil', phoneNumber: '...' }]
     if (!isConnected) return res.status(500).json({ error: 'WhatsApp not connected' });
 
     const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
     try {
         const combined = generateCombinedButtons(text, actions, { title, footer });
-        await sock.sendMessage(jid, combined);
+        await sock.sendMessage(jid, combined, { viewOnce: true });
         res.json({ status: 'success' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -220,5 +252,8 @@ app.post('/api/send-combined', async (req, res) => {
 // Start Server & Connect
 app.listen(config.port, async () => {
     console.log(`🚀 REST API Server running on port ${config.port}`);
+    if (config.force_fresh_session) {
+        clearAuthSession();
+    }
     await connectToWhatsApp();
 });

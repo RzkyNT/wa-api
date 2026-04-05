@@ -69,7 +69,30 @@ Cara menulis perintah multi-baris di terminal berbeda-beda:
 
 ---
 
-### 1. Cek Status Koneksi (Format Satu Baris - Aman Untuk Semua)
+### 📋 CONTOH SIAP COPY (WINDOWS CMD / SATU BARIS)
+Gunakan contoh ini jika Anda menggunakan **Command Prompt (CMD)** di Windows agar tidak error JSON:
+
+**1. Kirim Pesan Teks**
+```cmd
+curl -X POST http://localhost:3000/api/send-message -H "Content-Type: application/json" -H "x-api-key: rahasia123" -d "{\"to\": \"628xxxxxxxx\", \"text\": \"Halo dari CMD!\"}"
+```
+
+**2. Kirim Pesan Button (Tombol)**
+```cmd
+curl -X POST http://localhost:3000/api/send-button -H "Content-Type: application/json" -H "x-api-key: rahasia123" -d "{\"to\": \"628xxxxxxxx\", \"text\": \"Pilih menu:\", \"buttons\": [{\"id\": \"b1\", \"displayText\": \"Makan\"}, {\"id\": \"b2\", \"displayText\": \"Minum\"}]}"
+```
+
+**3. Kirim List Message (Daftar Menu)**
+```cmd
+curl -X POST http://localhost:3000/api/send-list -H "Content-Type: application/json" -H "x-api-key: rahasia123" -d "{\"to\": \"628xxxxxxxx\", \"title\": \"Judul Menu\", \"buttonText\": \"Buka Menu\", \"sections\": [{\"title\": \"Kategori 1\", \"rows\": [{\"rowId\": \"id1\", \"title\": \"Pilihan 1\"}]}]}"
+```
+
+---
+
+## 🔗 REST API Endpoints (cURL Linux / Termux)
+(Gunakan contoh ini hanya jika Anda memakai **Termux** atau **Linux**)
+
+### 1. Cek Status Koneksi
 ```bash
 curl http://localhost:3000/api/status -H "x-api-key: rahasia123"
 ```
@@ -84,48 +107,6 @@ curl -X POST http://localhost:3000/api/send-message \
            "text": "Halo, ini pesan dari API Termux!"
          }'
 ```
-
-### 3. Kirim Pesan Button (Baileys-Joss Style)
-```bash
-curl -X POST http://localhost:3000/api/send-button \
-     -H "Content-Type: application/json" \
-     -H "x-api-key: rahasia123" \
-     -d '{
-           "to": "628xxxxxxxx",
-           "text": "Pilih salah satu:",
-           "title": "Halo Bosku",
-           "footer": "Powered by Baileys-Joss",
-           "buttons": [
-             { "id": "btn1", "displayText": "👍 Mantap" },
-             { "id": "btn2", "displayText": "👎 Kurang" }
-           ]
-         }'
-```
-
-### 4. Kirim List Message
-```bash
-curl -X POST http://localhost:3000/api/send-list \
-     -H "Content-Type: application/json" \
-     -H "x-api-key: rahasia123" \
-     -d '{
-           "to": "628xxxxxxxx",
-           "title": "Menu Kantin",
-           "buttonText": "Lihat Daftar Makanan",
-           "description": "Silahkan pilih menu favoritmu!",
-           "footer": "Buka jam 8 pagi - 9 malam",
-           "sections": [
-             {
-               "title": "Makanan",
-               "rows": [
-                 { "rowId": "m1", "title": "Nasi Goreng", "description": "Rp 15.000" },
-                 { "rowId": "m2", "title": "Mie Ayam", "description": "Rp 12.000" }
-               ]
-             }
-           ]
-         }'
-```
-
----
 
 ## 🔔 Webhooks Configuration
 
@@ -181,6 +162,59 @@ pm2 save
 ```
 
 ### 3. Tambahkan API Key
-Sangat disarankan menambahkan pengamanan (seperti Token Header) jika URL API Anda sudah dipublish secara online agar tidak disalahgunakan orang lain.
+Sangat disarankan menambahkan pengamanan (seperti Token Header) jika URL API Anda sudah dipublish secara online agar tidak disalahgunakan orang lain (sudah siap di `config.js`).
+
+---
+
+## 🔔 Webhooks & Integrasi (Chatbot Otomatis)
+
+**Webhook** adalah cara Bot memberitahu website/server Anda jika ada pesan masuk secara real-time.
+
+### 📋 Cara Konfigurasi di `config.js`:
+```javascript
+export const config = {
+  // ... (setup kunci lain)
+  webhook_url: 'https://script.google.com/macros/s/KODE_UNIQ_GAS/exec', // Ganti dengan URL Google Script Anda
+};
+```
+
+---
+
+## ☁️ Jembatan Webhook (Google Apps Script + Sheets)
+
+Gunakan **Google Apps Script (GAS)** agar data chat otomatis masuk ke **Google Sheets** (Free & Tanpa Database). Ini sangat stabil sebagai jembatan jika website utama Anda di InfinityFree/Shared Hosting.
+
+### 📋 Script Jembatan (Code.gs)
+Buka [script.google.com](https://script.google.com), buat proyek baru, paste kode ini, dan Deploy sebagai **Web App (Anyone Access)**:
+
+```javascript
+// doPost(e) akan menerima data otomatis dari API WA Anda
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    // Simpan ke baris baru: Waktu, Pengirim, Isi Pesan, Tipe Pesan
+    sheet.appendRow([new Date(), data.from, data.message, data.type]);
+
+    // OPSI: Kirim balasan otomatis/Auto-Reply dari sini via UrlFetchApp
+    return ContentService.createTextOutput("SUCCESS").setMimeType(ContentService.MimeType.TEXT);
+  } catch (error) {
+    return ContentService.createTextOutput("ERROR: " + error.message).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+```
+
+---
+
+## 🚀 Pilihan Deployment (ONLINE)
+
+Karena API ini butuh **Node.js** dan koneksi persistent (Bukan Hosting PHP seperti InfinityFree), Anda bisa menggunakan:
+1.  **Koyeb / Railway / Render**: Hosting khusus Node.js yang mendukung WebSocket.
+2.  **Termux (Android)**: Gunakan HP lama Anda sebagai server WA yang hidup 24 jam gratis.
+3.  **Tunneling (Localhost.run)**: Jika dijalankan di PC/Termux, gunakan tunnel agar bisa menerima webhook dari Google:
+    ```bash
+    ssh -R 80:localhost:3000 nokey@localhost.run
+    ```
 
 ---
