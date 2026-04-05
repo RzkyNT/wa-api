@@ -60,10 +60,17 @@ Jika ingin kembali menggunakan QR Code:
 
 Default port adalah `3000`.
 
-### 1. Cek Status Koneksi
+### ⚠️ SINTAKSIS CURL (PENTING!)
+Cara menulis perintah multi-baris di terminal berbeda-beda:
+- **Termux / Linux / Git Bash**: Gunakan `\` di akhir baris.
+- **Windows CMD**: Gunakan `^` di akhir baris atau tulis dalam satu baris.
+- **Windows PowerShell**: Gunakan `` ` `` di akhir baris.
+
+---
+
+### 1. Cek Status Koneksi (Format Satu Baris - Aman Untuk Semua)
 ```bash
-curl http://localhost:3000/api/status \
-     -H "x-api-key: rahasia123"
+curl http://localhost:3000/api/status -H "x-api-key: rahasia123"
 ```
 
 ### 2. Kirim Pesan Teks Biasa
