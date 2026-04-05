@@ -44,13 +44,15 @@ Default port adalah `3000`.
 
 ### 1. Cek Status Koneksi
 ```bash
-curl http://localhost:3000/api/status
+curl http://localhost:3000/api/status \
+     -H "x-api-key: rahasia123"
 ```
 
 ### 2. Kirim Pesan Teks Biasa
 ```bash
 curl -X POST http://localhost:3000/api/send-message \
      -H "Content-Type: application/json" \
+     -H "x-api-key: rahasia123" \
      -d '{
            "to": "628xxxxxxxx",
            "text": "Halo, ini pesan dari API Termux!"
@@ -61,6 +63,7 @@ curl -X POST http://localhost:3000/api/send-message \
 ```bash
 curl -X POST http://localhost:3000/api/send-button \
      -H "Content-Type: application/json" \
+     -H "x-api-key: rahasia123" \
      -d '{
            "to": "628xxxxxxxx",
            "text": "Pilih salah satu:",
@@ -77,6 +80,7 @@ curl -X POST http://localhost:3000/api/send-button \
 ```bash
 curl -X POST http://localhost:3000/api/send-list \
      -H "Content-Type: application/json" \
+     -H "x-api-key: rahasia123" \
      -d '{
            "to": "628xxxxxxxx",
            "title": "Menu Kantin",
@@ -154,4 +158,3 @@ pm2 save
 Sangat disarankan menambahkan pengamanan (seperti Token Header) jika URL API Anda sudah dipublish secara online agar tidak disalahgunakan orang lain.
 
 ---
-*Dibuat oleh Antigravity AI*

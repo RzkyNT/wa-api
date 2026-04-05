@@ -17,6 +17,17 @@ import { config } from './config.js';
 const app = express();
 app.use(express.json());
 
+// --- MIDDLEWARE KEAMANAN (API KEY) ---
+const verifyApiKey = (req, res, next) => {
+    const apiKey = req.headers['x-api-key'];
+    if (config.api_key && apiKey !== config.api_key) {
+        return res.status(401).json({ error: 'Unauthorized: API Key tidak valid atau tidak ditemukan' });
+    }
+    next();
+};
+
+app.use('/api', verifyApiKey); // Terapkan keamanan pada semua route /api/*
+
 const logger = pino({ level: 'info' });
 let sock = null;
 let isConnected = false;

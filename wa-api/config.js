@@ -4,5 +4,6 @@ export const config = {
   auth_folder: 'auth_session',
   // --- PAIRING CODE CONFIG ---
   use_pairing_code: true, // Ubah ke false jika ingin gunakan QR Scan
-  phone_number: '' // Masukkan nomor HP (format internasional, tanpa +)
+  phone_number: '', // Masukkan nomor HP (format internasional, tanpa +)
+  api_key: 'rahasia123' // TOKEN PENGAMAN: Ganti dengan kode rahasia Anda sendiri
 };
