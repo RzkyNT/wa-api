@@ -20,6 +20,7 @@ Buka aplikasi Termux Anda, lalu jalankan perintah berikut secara beruntun:
 4.  (Opsional) Masukkan kode impian Anda pada `custom_pairing_code` (harus 8 karakter, contoh: `ABCDEFGH`).
 5.  Jalankan perintah ini di terminal:
 ```bash
+npm install
 npm start
 ```
 5.  Tunggu beberapa detik, akan muncul kode **8 Karakter** di layar terminal.
