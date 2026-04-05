@@ -12,6 +12,7 @@ import express from 'express';
 import axios from 'axios';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
+import fs from 'fs';
 import { config } from './config.js';
 
 const app = express();
@@ -33,6 +34,13 @@ let sock = null;
 let isConnected = false;
 let isPairingRequested = false;
 
+const clearAuthSession = () => {
+    if (fs.existsSync(config.auth_folder)) {
+        console.log('🧹 Menghapus sesi lama yang bermasalah...');
+        fs.rmSync(config.auth_folder, { recursive: true, force: true });
+    }
+};
+
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState(config.auth_folder);
     const { version } = await fetchLatestBaileysVersion();
@@ -45,43 +53,62 @@ async function connectToWhatsApp() {
         browser: ['Ubuntu', 'Chrome', '20.0.04']
     });
 
-    if (config.use_pairing_code && !sock.authState.creds.registered && !isPairingRequested) {
-        if (!config.phone_number || config.phone_number === '628xxxxxxxx') {
-            console.error('❌ ERROR: Masukkan nomor HP di config.js untuk menggunakan Pairing Code!');
-        } else {
-            isPairingRequested = true; // Tandai agar tidak dipanggil ulang
-            const phoneNumber = config.phone_number.replace(/[^0-9]/g, '');
-            setTimeout(async () => {
-                try {
-                    let code = await sock.requestPairingCode(phoneNumber);
-                    console.log('---------------------------------------');
-                    console.log(`🔐 YOUR PAIRING CODE: ${code}`);
-                    console.log('---------------------------------------');
-                } catch (err) {
-                    console.error('❌ Gagal mendapatkan pairing code:', err.message);
-                    isPairingRequested = false; // Reset jika gagal agar bisa coba lagi
-                }
-            }, 3000);
-        }
-    }
-
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr && !config.use_pairing_code) {
-            console.log('--- SCAN QR CODE DI BAWAH INI ---');
-            qrcode.generate(qr, { small: true });
+        if (qr) {
+            if (config.use_pairing_code) {
+                if (!sock.authState.creds.registered && !isPairingRequested) {
+                    isPairingRequested = true;
+                    const phoneNumber = config.phone_number.replace(/[^0-9]/g, '');
+                    const customCode = config.custom_pairing_code ? config.custom_pairing_code.trim().toUpperCase().replace(/-/g, '') : null;
+                    
+                    setTimeout(async () => {
+                        try {
+                            let code;
+                            if (customCode && customCode.length === 8) {
+                                code = await sock.requestPairingCode(phoneNumber, customCode);
+                            } else {
+                                code = await sock.requestPairingCode(phoneNumber);
+                            }
+                            console.log('---------------------------------------');
+                            console.log(`🔐 YOUR PAIRING CODE: ${code}`);
+                            console.log('---------------------------------------');
+                        } catch (err) {
+                            console.error('❌ Gagal mendapatkan pairing code:', err.message);
+                            isPairingRequested = false;
+                        }
+                    }, 3000);
+                }
+            } else {
+                console.log('--- SCAN QR CODE DI BAWAH INI ---');
+                qrcode.generate(qr, { small: true });
+            }
         }
 
         if (connection === 'close') {
             isConnected = false;
-            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            isPairingRequested = false;
+            const statusCode = (lastDisconnect?.error)?.output?.statusCode;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            
             console.log('🔴 Connection closed. Reconnecting:', shouldReconnect);
+
+            if (!shouldReconnect) {
+                console.log('⚠️ Sesi telah Keluar (Logged Out).');
+                clearAuthSession(); // Hapus otomatis folder session
+            } else if (statusCode === 401 || statusCode === 403) {
+                // Biasanya 401 atau 403 berarti session corrupt/expired
+                console.log('⚠️ Sesi rusak atau kadaluarsa (Conflict/Expired).');
+                clearAuthSession();
+            }
+
             if (shouldReconnect) {
                 connectToWhatsApp();
             }
         } else if (connection === 'open') {
             isConnected = true;
+            isPairingRequested = false;
             console.log('✅ WhatsApp Connected!');
         }
     });
