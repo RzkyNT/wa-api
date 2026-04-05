@@ -31,6 +31,7 @@ app.use('/api', verifyApiKey); // Terapkan keamanan pada semua route /api/*
 const logger = pino({ level: 'info' });
 let sock = null;
 let isConnected = false;
+let isPairingRequested = false;
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState(config.auth_folder);
@@ -41,13 +42,14 @@ async function connectToWhatsApp() {
         auth: state,
         printQRInTerminal: config.use_pairing_code ? false : true,
         logger: logger.child({ class: 'baileys' }),
-        browser: ['Ubuntu', 'Chrome', '20.0.04'] // Chrome di Ubuntu biasanya lebih stabil untuk pairing
+        browser: ['Ubuntu', 'Chrome', '20.0.04']
     });
 
-    if (config.use_pairing_code && !sock.authState.creds.registered) {
+    if (config.use_pairing_code && !sock.authState.creds.registered && !isPairingRequested) {
         if (!config.phone_number || config.phone_number === '628xxxxxxxx') {
             console.error('❌ ERROR: Masukkan nomor HP di config.js untuk menggunakan Pairing Code!');
         } else {
+            isPairingRequested = true; // Tandai agar tidak dipanggil ulang
             const phoneNumber = config.phone_number.replace(/[^0-9]/g, '');
             setTimeout(async () => {
                 try {
@@ -57,8 +59,9 @@ async function connectToWhatsApp() {
                     console.log('---------------------------------------');
                 } catch (err) {
                     console.error('❌ Gagal mendapatkan pairing code:', err.message);
+                    isPairingRequested = false; // Reset jika gagal agar bisa coba lagi
                 }
-            }, 3000); // Tunggu sebentar agar socket siap
+            }, 3000);
         }
     }
 
