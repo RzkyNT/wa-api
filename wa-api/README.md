@@ -29,6 +29,24 @@ npm start
 
 ---
 
+## 💻 Instalasi di Desktop (Windows / Linux / Mac)
+
+Aplikasi ini bersifat cross-platform, Anda bisa menjalankannya di PC atau Laptop:
+
+1.  **Install Node.js**: Download di [nodejs.org](https://nodejs.org/).
+2.  **Buka Terminal/CMD/PowerShell**.
+3.  **Masuk ke folder project**: `cd wa-api`.
+4.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+5.  **Jalankan API**:
+    ```bash
+    npm start
+    ```
+
+---
+
 ## 🚀 Cara Menjalankan (Opsi Scan QR)
 
 Jika ingin kembali menggunakan QR Code:
